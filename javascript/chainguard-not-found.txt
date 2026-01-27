@@ -1,0 +1,4 @@
+# Packages not found in Chainguard libraries
+# These will be pulled from public NPM via CodeArtifact fallback
+# Generated: 2026-01-16T22:06:17Z
+
