@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chainguard Libraries - Java Package Verification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary-dark: #14003D;
+            --color-primary-blue: #3443F4;
+            --color-accent-gold: #FFC107;
+            --color-background-white: #FFFFFF;
+            --color-background-light: #F5F5F9;
+            --color-text-primary: #14003D;
+            --color-border: #E5E5E5;
+            --color-shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--color-background-white);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: var(--color-background-white);
+            border-bottom: 1px solid var(--color-border);
+            padding: 16px 0;
+            box-shadow: 0 1px 3px var(--color-shadow);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo img {
+            height: 18px;
+            width: auto;
+        }
+
+        .logo-text {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #EB02E0;
+            line-height: 18px;
+        }
+
+        @media (min-width: 768px) {
+            .logo-text {
+                font-size: 13px;
+                line-height: 20.8px;
+            }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            color: var(--color-text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: var(--color-background-light);
+            color: var(--color-primary-blue);
+        }
+
+        .nav-link.active {
+            background: var(--color-background-light);
+            color: var(--color-primary-blue);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .hero {
+            padding: 24px 24px 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero-label {
+            color: #3443F4;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .hero-title {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #14003D;
+            margin-bottom: 12px;
+        }
+
+        .hero-description {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #14003D;
+            opacity: 0.8;
+            max-width: 900px;
+        }
+
+        .content-section {
+            background: #F5F5F9;
+            padding: 32px 24px;
+        }
+
+        .section-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .verification-section {
+            background: var(--color-background-white);
+            border-radius: 16px;
+            padding: 24px 40px 40px 40px;
+            box-shadow: 0 2px 8px var(--color-shadow);
+        }
+
+        .verification-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .verification-tab {
+            background: none;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--color-text-primary);
+            opacity: 0.6;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .verification-tab:hover {
+            opacity: 0.8;
+        }
+
+        .verification-tab.active {
+            opacity: 1;
+            border-bottom-color: var(--color-primary-blue);
+            color: var(--color-primary-blue);
+        }
+
+        .verification-tab-content {
+            display: block;
+        }
+
+        .verification-header {
+            margin-bottom: 32px;
+        }
+
+        .verification-subtitle {
+            font-size: 16px;
+            color: var(--color-text-primary);
+            opacity: 0.7;
+        }
+
+        .verification-code {
+            background: var(--color-primary-blue);
+            color: #FFFFFF;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .requirements-display {
+            background: var(--color-background-light);
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .requirements-code {
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--color-text-primary);
+            margin: 0;
+            white-space: pre;
+        }
+
+        .dep-highlight {
+            background: linear-gradient(90deg, rgba(52, 67, 244, 0.15) 0%, rgba(52, 67, 244, 0.08) 100%);
+            border-left: 3px solid var(--color-primary-blue);
+            display: inline;
+            padding: 2px 0;
+        }
+
+        .stats-box {
+            background: var(--color-background-light);
+            border: 2px solid var(--color-border);
+            color: var(--color-text-primary);
+            padding: 16px 24px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .stats-number {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width: 1024px) {
+            .packages-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .packages-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .package-card {
+            background: var(--color-background-light);
+            padding: 16px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .package-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px var(--color-shadow);
+            border-color: var(--color-primary-blue);
+        }
+
+        .package-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .package-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 4px;
+        }
+
+        .package-version {
+            font-size: 13px;
+            color: var(--color-text-primary);
+            opacity: 0.6;
+        }
+
+        .package-badge {
+            background: #F0FDF4;
+            color: #166534;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #BBF7D0;
+        }
+
+        .package-badge:hover {
+            transform: translateY(-1px);
+            background: #DCFCE7;
+            border-color: #86EFAC;
+        }
+
+        .package-badge-unverified {
+            background: #FEF2F2;
+            color: #991B1B;
+            border: 1px solid #FECACA;
+        }
+
+        .package-badge-unverified:hover {
+            background: #FEE2E2;
+            border-color: #FCA5A5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-primary);
+        }
+
+        .spinner {
+            border: 4px solid var(--color-border);
+            border-top: 4px solid var(--color-primary-blue);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 8px;
+        }
+
+        .sbom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(20, 0, 61, 0.8);
+            z-index: 1000;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .sbom-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sbom-content {
+            background: var(--color-background-white);
+            border-radius: 12px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .sbom-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sbom-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .sbom-close {
+            background: var(--color-background-light);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--color-text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .sbom-close:hover {
+            background: var(--color-border);
+        }
+
+        .sbom-body {
+            padding: 24px;
+            overflow: auto;
+        }
+
+        .sbom-json {
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            background: var(--color-background-light);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--color-text-primary);
+        }
+
+        .sbom-link {
+            color: var(--color-primary-blue);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .sbom-link:hover {
+            color: #2832c9;
+            text-decoration-thickness: 2px;
+        }
+
+        .file-browser-tree {
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .file-tree-item {
+            padding: 4px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .file-tree-item:hover {
+            background: var(--color-background-light);
+            border-radius: 4px;
+        }
+
+        .file-tree-folder {
+            color: var(--color-primary-blue);
+            font-weight: 600;
+        }
+
+        .file-tree-file {
+            color: #14003D;
+            padding-left: 20px;
+        }
+
+        .file-tree-size {
+            color: #14003D;
+            opacity: 0.5;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        .file-tree-children {
+            padding-left: 20px;
+            display: none;
+        }
+
+        .file-tree-children.expanded {
+            display: block;
+        }
+
+        .file-stats {
+            background: #F5F5F9;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .file-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .file-stat-label {
+            font-size: 12px;
+            color: #14003D;
+            opacity: 0.6;
+            margin-bottom: 4px;
+        }
+
+        .file-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #3443F4;
+        }
+
+        .auth-banner {
+            background: var(--color-background-white);
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px var(--color-shadow);
+        }
+
+        .auth-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .auth-banner-icon {
+            font-size: 32px;
+        }
+
+        .auth-banner-text {
+            flex: 1;
+        }
+
+        .auth-banner-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--color-text-primary);
+        }
+
+        .auth-banner-description {
+            font-size: 14px;
+            color: var(--color-text-primary);
+            opacity: 0.7;
+        }
+
+        .logs-container {
+            margin-top: 16px;
+            background: var(--color-background-light);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--color-primary-blue);
+        }
+
+        .logs-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .logs-timestamp {
+            font-size: 12px;
+            color: var(--color-text-primary);
+            opacity: 0.6;
+        }
+
+        .logs-content {
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            background: var(--color-background-white);
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--color-text-primary);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="/images/chainguard-icon.svg" alt="" aria-hidden="true">
+                <span class="logo-text">Chainguard Libraries</span>
+            </div>
+            <nav class="nav-links">
+                <div class="nav-item">
+                    <a href="http://localhost:5000" class="nav-link">
+                        <img src="/images/python-logo.svg" alt="Python" class="nav-icon">
+                        Python
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/" class="nav-link active">
+                        <img src="/images/java-logo.svg" alt="Java" class="nav-icon">
+                        Java
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="http://localhost:5002" class="nav-link">
+                        <img src="/images/javascript-logo.svg" alt="JavaScript" class="nav-icon">
+                        JavaScript
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-label">TRUSTED SOURCE FOR OPEN SOURCE</div>
+        <h1 class="hero-title">Malware-resistant Java libraries built from source</h1>
+        <p class="hero-description">
+            Stop software supply chain attacks without compromising developer experience and productivity with malware-resistant Java, Python, and JavaScript dependencies built securely in our SLSA L2 hardened build infrastructure.
+        </p>
+    </section>
+
+    <section class="content-section">
+        <div class="section-inner">
+            <div id="verification-section" class="verification-section">
+                <div class="verification-tabs">
+                    <button class="verification-tab" onclick="switchVerificationTab('pom')" id="tab-pom">
+                        pom.xml
+                    </button>
+                    <button class="verification-tab active" onclick="switchVerificationTab('chainctl')" id="tab-chainctl">
+                        chainctl verification
+                    </button>
+                </div>
+
+                <div id="content-pom" class="verification-tab-content" style="display: none;">
+                    <div class="verification-header">
+                        <p class="verification-subtitle">
+                            Maven project configuration (<span class="verification-code">pom.xml</span>)
+                        </p>
+                    </div>
+                    <div class="requirements-display">
+                        <pre class="requirements-code" id="pom-content">Loading pom.xml...</pre>
+                    </div>
+                </div>
+
+                <div id="content-chainctl" class="verification-tab-content">
+                    <div class="verification-header">
+                        <p class="verification-subtitle">
+                            Using <span class="verification-code">chainctl libraries verify</span> to verify all JAR files are from Chainguard Libraries
+                            <a href="#" onclick="toggleLogs(); return false;" style="color: #3443F4; text-decoration: none; font-weight: 500; margin-left: 8px;">(View chainctl output)</a>
+                        </p>
+                    </div>
+
+                    <div id="verification-results">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div class="loading-text" id="progress-text">Verifying packages...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SBOM Modal -->
+    <div id="sbom-modal" class="sbom-modal">
+        <div class="sbom-content">
+            <div class="sbom-header">
+                <h3 class="sbom-title" id="sbom-title">Package SBOM</h3>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <span id="sbom-provenance-button"></span>
+                    <button class="sbom-close" onclick="closeSbomModal()">&times;</button>
+                </div>
+            </div>
+            <div class="sbom-body">
+                <pre class="sbom-json" id="sbom-json">Loading SBOM...</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAR Contents Modal -->
+    <div id="files-modal" class="sbom-modal">
+        <div class="sbom-content">
+            <div class="sbom-header">
+                <h3 class="sbom-title" id="files-title">JAR Contents</h3>
+                <button class="sbom-close" onclick="closeFilesModal()">&times;</button>
+            </div>
+            <div class="sbom-body">
+                <div id="files-stats" class="file-stats"></div>
+                <div id="files-tree" class="file-browser-tree">Loading files...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Provenance Modal -->
+    <div id="provenance-modal" class="sbom-modal">
+        <div class="sbom-content">
+            <div class="sbom-header">
+                <h3 class="sbom-title" id="provenance-title">Package Provenance</h3>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <span id="provenance-rekor-button"></span>
+                    <button class="sbom-close" onclick="closeProvenanceModal()">&times;</button>
+                </div>
+            </div>
+            <div class="sbom-body">
+                <div id="provenance-content" class="sbom-json">Loading provenance...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchVerificationTab(tabName) {
+            document.getElementById('content-pom').style.display = 'none';
+            document.getElementById('content-chainctl').style.display = 'none';
+            document.getElementById('tab-pom').classList.remove('active');
+            document.getElementById('tab-chainctl').classList.remove('active');
+
+            document.getElementById('content-' + tabName).style.display = 'block';
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        // Initialize - just show verification section and start loading
+        function init() {
+            document.getElementById('verification-section').style.display = 'block';
+            loadDependencies();
+            loadVerificationResults();
+        }
+
+        // Load pom.xml content with highlighted dependencies
+        function loadDependencies() {
+            fetch('/api/pom')
+                .then(response => response.json())
+                .then(data => {
+                    const pomContent = document.getElementById('pom-content');
+                    if (data.error) {
+                        pomContent.textContent = 'Error: ' + data.error;
+                        return;
+                    }
+
+                    // Escape HTML entities
+                    let content = data.content
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+
+                    // Highlight individual <dependency> blocks (not the <dependencies> wrapper)
+                    content = content.replace(
+                        /(&lt;dependency&gt;[\s\S]*?&lt;\/dependency&gt;)/g,
+                        '<span class="dep-highlight">$1</span>'
+                    );
+
+                    pomContent.innerHTML = content;
+                })
+                .catch(error => {
+                    document.getElementById('pom-content').textContent = 'Error loading pom.xml: ' + error.message;
+                });
+        }
+
+        let progressPollInterval = null;
+
+        function loadVerificationResults() {
+            // Start verification in background (don't await - let it run)
+            fetch('/api/chainctl')
+                .then(response => response.json())
+                .then(data => {
+                    // Verification complete - stop polling and show results
+                    if (progressPollInterval) {
+                        clearInterval(progressPollInterval);
+                    }
+                    displayVerificationResults(data);
+                })
+                .catch(error => {
+                    console.error('Verification error:', error);
+                    if (progressPollInterval) {
+                        clearInterval(progressPollInterval);
+                    }
+                    const container = document.getElementById('verification-results');
+                    container.innerHTML = `
+                        <div style="background: #FFF3E0; padding: 20px; border-radius: 8px; color: #E65100;">
+                            <strong>Error:</strong> ${error.message}
+                        </div>
+                    `;
+                });
+
+            // Poll for progress updates while verification runs
+            progressPollInterval = setInterval(async () => {
+                try {
+                    const progress = await fetch('/api/chainctl/progress').then(r => r.json());
+                    updateProgressDisplay(progress.completed, progress.total, progress.status);
+                } catch (e) {
+                    console.error('Progress poll error:', e);
+                }
+            }, 500);
+        }
+
+        function updateProgressDisplay(completed, total, status) {
+            const progressText = document.getElementById('progress-text');
+            if (progressText) {
+                if (status === 'running' && total > 0) {
+                    progressText.textContent = `Verifying JARs: ${completed}/${total}`;
+                } else if (status === 'idle') {
+                    progressText.textContent = 'Verifying JARs...';
+                }
+            }
+        }
+
+        function displayVerificationResults(data) {
+            const container = document.getElementById('verification-results');
+
+            if (data.error) {
+                container.innerHTML = `
+                    <div style="background: #FFF3E0; padding: 20px; border-radius: 8px; color: #E65100;">
+                        <strong>Error:</strong> ${data.error}
+                    </div>
+                `;
+                return;
+            }
+
+            const packages = data.packages || [];
+            const verified = packages.filter(pkg => pkg.verified).length;
+            const total = packages.length;
+
+            let html = `
+                <div class="stats-box">
+                    <div class="stats-number">${verified} / ${total} JARs Verified as Chainguard Libraries</div>
+                </div>
+                <div class="packages-grid">
+            `;
+
+            packages.forEach(pkg => {
+                const name = pkg.artifactId || pkg.filename || 'unknown';
+                const version = pkg.version || '';
+                const isVerified = pkg.verified === true;
+                const badgeClass = isVerified ? 'package-badge' : 'package-badge package-badge-unverified';
+                const badgeIcon = isVerified ? '&#10003;' : '&#10007;';
+                const badgeText = isVerified ? 'Verified' : 'Not Verified';
+
+                html += `
+                    <div class="package-card">
+                        <div class="package-info">
+                            <div class="package-name" onclick="showJarFiles('${name}', '${version}')" style="cursor: pointer; color: #3443F4;">
+                                &#128230; ${name}
+                            </div>
+                            <div class="package-version">v${version}</div>
+                        </div>
+                        <div class="${badgeClass}" onclick="showSbom('${name}', '${version}')">
+                            <span>${badgeIcon}</span>
+                            <span>${badgeText}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            // Add logs container
+            html += `
+                <div id="logs-container" class="logs-container" style="display: none; margin-top: 24px;">
+                    <div class="logs-header">
+                        <h3>Chainctl Output</h3>
+                        <span id="logs-timestamp" class="logs-timestamp"></span>
+                    </div>
+                    <pre class="logs-content" id="logs-content">Loading logs...</pre>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function toggleLogs() {
+            const logsContainer = document.getElementById('logs-container');
+            if (logsContainer.style.display === 'none') {
+                logsContainer.style.display = 'block';
+                loadLogs();
+            } else {
+                logsContainer.style.display = 'none';
+            }
+        }
+
+        function loadLogs() {
+            fetch('/api/chainctl/logs')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('logs-content').textContent = data.normal_output || 'No logs available';
+                    document.getElementById('logs-timestamp').textContent = data.last_run ? `Last run: ${data.last_run}` : '';
+                })
+                .catch(error => {
+                    document.getElementById('logs-content').textContent = `Error loading logs: ${error.message}`;
+                });
+        }
+
+        // Format SBOM JSON with clickable links for downloadLocation and sourceInfo
+        function formatSbomWithLinks(jsonStr) {
+            // Escape HTML first
+            let escaped = jsonStr
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            // Helper to convert git+https GitHub URL to clickable link
+            function makeGitHubLink(fullUrl, repoPath, commitHash) {
+                const githubUrl = `https://github.com/${repoPath}/tree/${commitHash}`;
+                return `<a href="${githubUrl}" target="_blank" class="sbom-link">${fullUrl}</a>`;
+            }
+
+            // Convert git+https:// URLs in downloadLocation to clickable links
+            escaped = escaped.replace(
+                /"downloadLocation":\s*"(git\+https:\/\/github\.com\/([^@"]+)@([a-f0-9]+))"/g,
+                (match, fullUrl, repoPath, commitHash) => {
+                    return `"downloadLocation": "${makeGitHubLink(fullUrl, repoPath, commitHash)}"`;
+                }
+            );
+
+            // Convert git+https:// URLs embedded in sourceInfo to clickable links
+            escaped = escaped.replace(
+                /(git\+https:\/\/github\.com\/([^@,\s"]+)@([a-f0-9]+))/g,
+                (match, fullUrl, repoPath, commitHash) => {
+                    // Skip if already wrapped in anchor tag
+                    if (escaped.indexOf(`<a href`) !== -1 && escaped.indexOf(fullUrl) > escaped.lastIndexOf(`<a href`)) {
+                        return match;
+                    }
+                    return makeGitHubLink(fullUrl, repoPath, commitHash);
+                }
+            );
+
+            // Also handle regular https:// URLs in downloadLocation
+            escaped = escaped.replace(
+                /"downloadLocation":\s*"(https:\/\/[^"]+)"/g,
+                (match, url) => {
+                    // Skip if already wrapped in anchor tag
+                    if (match.includes('&lt;a href') || match.includes('<a href')) return match;
+                    return `"downloadLocation": "<a href="${url}" target="_blank" class="sbom-link">${url}</a>"`;
+                }
+            );
+
+            return escaped;
+        }
+
+        // SBOM Modal
+        function showSbom(artifactId, version) {
+            const modal = document.getElementById('sbom-modal');
+            const title = document.getElementById('sbom-title');
+            const jsonContent = document.getElementById('sbom-json');
+            const provenanceButton = document.getElementById('sbom-provenance-button');
+
+            title.textContent = `${artifactId} v${version} - SBOM`;
+            jsonContent.textContent = 'Loading SBOM...';
+            provenanceButton.innerHTML = '';
+
+            modal.classList.add('active');
+
+            fetch(`/api/sbom/${artifactId}/${version}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        jsonContent.textContent = data.error;
+                    } else {
+                        const jsonStr = JSON.stringify(data.sbom || data, null, 2);
+                        // Make downloadLocation URLs clickable
+                        const formattedJson = formatSbomWithLinks(jsonStr);
+                        jsonContent.innerHTML = formattedJson;
+
+                        // Add provenance button
+                        provenanceButton.innerHTML = `
+                            <button onclick="showProvenance('${artifactId}', '${version}')"
+                                style="background: #3443F4; color: white; border: none; padding: 10px 20px;
+                                       border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                &#128274; Provenance
+                            </button>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    jsonContent.textContent = `Error loading SBOM: ${error.message}`;
+                });
+        }
+
+        function closeSbomModal() {
+            document.getElementById('sbom-modal').classList.remove('active');
+        }
+
+        // JAR Contents Modal
+        function showJarFiles(artifactId, version) {
+            const modal = document.getElementById('files-modal');
+            const title = document.getElementById('files-title');
+            const statsDiv = document.getElementById('files-stats');
+            const treeDiv = document.getElementById('files-tree');
+
+            title.textContent = `${artifactId} v${version} - JAR Contents`;
+            treeDiv.textContent = 'Loading files...';
+            statsDiv.innerHTML = '';
+
+            modal.classList.add('active');
+
+            fetch(`/api/jar-contents/${artifactId}/${version}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        treeDiv.textContent = `Error: ${data.error}`;
+                        return;
+                    }
+
+                    statsDiv.innerHTML = `
+                        <div class="file-stat">
+                            <div class="file-stat-label">Total Files</div>
+                            <div class="file-stat-value">${data.totalFiles}</div>
+                        </div>
+                        <div class="file-stat">
+                            <div class="file-stat-label">Total Size</div>
+                            <div class="file-stat-value">${formatBytes(data.totalSize)}</div>
+                        </div>
+                        <div class="file-stat">
+                            <div class="file-stat-label">JAR File</div>
+                            <div class="file-stat-value" style="font-size: 14px;">${data.jarFile}</div>
+                        </div>
+                    `;
+
+                    treeDiv.innerHTML = renderFileTree(data.tree || {}, 0);
+                })
+                .catch(error => {
+                    treeDiv.textContent = `Error loading files: ${error.message}`;
+                });
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function renderFileTree(tree, depth) {
+            let html = '';
+            const entries = Object.entries(tree).sort((a, b) => {
+                const aIsDir = a[1].type === 'dir' || a[1].children;
+                const bIsDir = b[1].type === 'dir' || b[1].children;
+                if (aIsDir && !bIsDir) return -1;
+                if (!aIsDir && bIsDir) return 1;
+                return a[0].localeCompare(b[0]);
+            });
+
+            for (const [name, node] of entries) {
+                const isDir = node.type === 'dir' || node.children;
+                const hasChildren = node.children && Object.keys(node.children).length > 0;
+                const indent = depth * 20;
+
+                if (isDir && hasChildren) {
+                    const childId = `tree-${Math.random().toString(36).substr(2, 9)}`;
+                    html += `
+                        <div class="file-tree-item file-tree-folder" style="padding-left: ${indent}px;">
+                            <span onclick="toggleTreeNode('${childId}')" style="cursor: pointer;">&#9654;</span>
+                            &#128193; ${name}/
+                        </div>
+                        <div id="${childId}" class="file-tree-children">
+                            ${renderFileTree(node.children, depth + 1)}
+                        </div>
+                    `;
+                } else if (isDir) {
+                    html += `
+                        <div class="file-tree-item file-tree-folder" style="padding-left: ${indent}px;">
+                            &#128193; ${name}/
+                        </div>
+                    `;
+                } else {
+                    const size = node.size ? `<span class="file-tree-size">${formatBytes(node.size)}</span>` : '';
+                    html += `
+                        <div class="file-tree-item file-tree-file" style="padding-left: ${indent}px;">
+                            &#128196; ${name} ${size}
+                        </div>
+                    `;
+                }
+            }
+            return html;
+        }
+
+        function toggleTreeNode(nodeId) {
+            const node = document.getElementById(nodeId);
+            if (node.classList.contains('expanded')) {
+                node.classList.remove('expanded');
+            } else {
+                node.classList.add('expanded');
+            }
+        }
+
+        function closeFilesModal() {
+            document.getElementById('files-modal').classList.remove('active');
+        }
+
+        // Provenance Modal
+        function showProvenance(artifactId, version) {
+            const modal = document.getElementById('provenance-modal');
+            const title = document.getElementById('provenance-title');
+            const content = document.getElementById('provenance-content');
+            const rekorButton = document.getElementById('provenance-rekor-button');
+
+            title.textContent = `${artifactId} v${version} - SLSA Provenance`;
+            content.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div><div style="margin-top: 20px;">Loading provenance...</div></div>';
+            rekorButton.innerHTML = '';
+
+            modal.classList.add('active');
+
+            // Fetch Rekor URL
+            fetch(`/api/rekor-hash/${artifactId}/${version}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.rekor_url) {
+                        rekorButton.innerHTML = `
+                            <button onclick="window.open('${data.rekor_url}', '_blank')"
+                                style="background: #3443F4; color: white; border: none; padding: 10px 20px;
+                                       border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                &#128269; Rekor
+                            </button>
+                        `;
+                    }
+                })
+                .catch(console.error);
+
+            // Fetch provenance
+            fetch(`/api/provenance/${artifactId}/${version}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        content.innerHTML = `<div style="background: #FFEBEE; padding: 20px; border-radius: 8px; color: #C62828;">Error: ${data.error}</div>`;
+                    } else {
+                        content.textContent = JSON.stringify(data.provenance || data.info || data, null, 2);
+                    }
+                })
+                .catch(error => {
+                    content.innerHTML = `<div style="background: #FFEBEE; padding: 20px; border-radius: 8px; color: #C62828;">Error loading provenance: ${error.message}</div>`;
+                });
+        }
+
+        function closeProvenanceModal() {
+            document.getElementById('provenance-modal').classList.remove('active');
+        }
+
+        // Close modals
+        document.getElementById('sbom-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeSbomModal();
+        });
+        document.getElementById('files-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeFilesModal();
+        });
+        document.getElementById('provenance-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeProvenanceModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSbomModal();
+                closeFilesModal();
+                closeProvenanceModal();
+            }
+        });
+
+        // Start on page load
+        init();
+    </script>
+</body>
+</html>
