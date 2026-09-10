@@ -10,17 +10,32 @@ DOMAIN_NAME="${CODEARTIFACT_DOMAIN:-my-maven-domain}"
 REPO_NAME="${CODEARTIFACT_REPO:-my-maven-repo}"
 UPSTREAM_REPO_NAME="${CODEARTIFACT_UPSTREAM_REPO:-maven-central-public}"
 
+# Optional tags applied at creation time to domain + both repositories.
+# Space-separated list of "key=K,value=V" pairs (AWS CLI tag format).
+#   e.g. CODEARTIFACT_TAGS="key=project,value=my-poc key=owner,value=me@example.com"
+CODEARTIFACT_TAGS="${CODEARTIFACT_TAGS:-}"
+
+TAGS_ARGS=()
+if [[ -n "$CODEARTIFACT_TAGS" ]]; then
+    # shellcheck disable=SC2206
+    TAGS_ARGS=(--tags $CODEARTIFACT_TAGS)
+fi
+
 echo "Setting up AWS CodeArtifact in region: $AWS_REGION"
 echo "Domain: $DOMAIN_NAME"
 echo "Repository: $REPO_NAME"
 echo "Upstream (Maven Central): $UPSTREAM_REPO_NAME"
+if [[ -n "$CODEARTIFACT_TAGS" ]]; then
+    echo "Tags: $CODEARTIFACT_TAGS"
+fi
 echo ""
 
 # Create the domain
 echo "Creating CodeArtifact domain..."
 if aws codeartifact create-domain \
     --domain "$DOMAIN_NAME" \
-    --region "$AWS_REGION" 2>/dev/null; then
+    --region "$AWS_REGION" \
+    "${TAGS_ARGS[@]}" 2>/dev/null; then
     echo "Domain '$DOMAIN_NAME' created successfully."
 else
     echo "Domain '$DOMAIN_NAME' already exists or creation failed. Continuing..."
@@ -32,7 +47,8 @@ echo "Creating upstream repository with Maven Central connection..."
 if aws codeartifact create-repository \
     --domain "$DOMAIN_NAME" \
     --repository "$UPSTREAM_REPO_NAME" \
-    --region "$AWS_REGION" 2>/dev/null; then
+    --region "$AWS_REGION" \
+    "${TAGS_ARGS[@]}" 2>/dev/null; then
     echo "Upstream repository '$UPSTREAM_REPO_NAME' created successfully."
 else
     echo "Upstream repository '$UPSTREAM_REPO_NAME' already exists or creation failed. Continuing..."
@@ -58,7 +74,8 @@ if aws codeartifact create-repository \
     --domain "$DOMAIN_NAME" \
     --repository "$REPO_NAME" \
     --upstreams "repositoryName=$UPSTREAM_REPO_NAME" \
-    --region "$AWS_REGION" 2>/dev/null; then
+    --region "$AWS_REGION" \
+    "${TAGS_ARGS[@]}" 2>/dev/null; then
     echo "Main repository '$REPO_NAME' created successfully."
 else
     echo "Main repository '$REPO_NAME' already exists. Updating upstreams..."

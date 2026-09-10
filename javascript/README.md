@@ -53,6 +53,8 @@ Deletes the CodeArtifact repository, upstream repository, and domain.
 | `NOT_FOUND_FILE` | `chainguard-not-found.txt` | Output file for missing packages |
 | `CGR_USERNAME` | (required) | Chainguard username |
 | `CGR_TOKEN` | (required) | Chainguard token |
+| `POST_SYNC_ALLOW_UPSTREAM` | `1` | After sync, flip synced packages from `upstream=BLOCK` to `upstream=ALLOW` so versions CG doesn't build fall through to npm. Set `0` to keep strict "CG-or-bust". |
+| `DEBUG` | `false` | Verbose output during npm pack/publish operations |
 
 ## Example Usage
 
@@ -78,8 +80,25 @@ LOCKFILE=other-package-lock.json ./sync-chainguard-packages-clean.sh
 
 ## How It Works
 
-The sync script sets `put-package-origin-configuration` with `publish=ALLOW,upstream=BLOCK` for each Chainguard package. This ensures:
+The sync runs origin controls in **two phases**:
 
-1. Chainguard packages can be published even if the same version exists in public NPM
-2. Future requests for that package will use the Chainguard version, not the public NPM version
-3. Packages not in Chainguard will still fall back to public NPM via the upstream connection
+1. **During upload**: sets `publish=ALLOW, upstream=BLOCK` per package.
+   This prevents npm's pre-publish metadata GET from triggering CodeArtifact's
+   upstream proxy, which would cache the public-npm version and reject our
+   Chainguard-built version with a 409 "exists in externally connected
+   repository" conflict.
+2. **After upload** (automatic, unless `POST_SYNC_ALLOW_UPSTREAM=0`):
+   flips synced packages to `upstream=ALLOW` so versions Chainguard didn't
+   build fall through to public npm transparently.
+
+### Prerelease versions and provenance
+
+npm's default publish behavior causes two kinds of failures that this script
+handles automatically:
+
+- **Prerelease versions** (`*-alpha.N`, `*-beta.N`, `*-rc.N`): npm refuses
+  to tag these as `latest`. The script detects prereleases (any version
+  containing `-`) and passes `--tag pre` automatically.
+- **SLSA provenance**: npm tries to auto-generate provenance attestations,
+  which fails outside CI with `EUSAGE: Automatic provenance generation not
+  supported for provider: null`. The script passes `--provenance=false`.

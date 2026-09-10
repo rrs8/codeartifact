@@ -56,6 +56,9 @@ Deletes the CodeArtifact repository, upstream repository, and domain.
 | `NOT_FOUND_FILE` | `chainguard-not-found.txt` | Output file for missing packages |
 | `CGR_REMEDIATED_INDEX` | `https://libraries.cgr.dev/python-remediated/simple/` | Chainguard remediated index URL |
 | `CGR_PYTHON_INDEX` | `https://libraries.cgr.dev/python/simple/` | Chainguard python index URL |
+| `TARGET_PYTHON_VERSION` | *(unset)* | If set, request wheels matching this Python (e.g. `3.11`). Falls back to sdist when unavailable. |
+| `TARGET_PLATFORM` | `manylinux2014_x86_64` | Target platform tag used when `TARGET_PYTHON_VERSION` is set. |
+| `POST_SYNC_ALLOW_UPSTREAM` | `1` | After sync, flip synced packages from `upstream=BLOCK` to `upstream=ALLOW` so versions CG doesn't build fall through to PyPI. Set `0` to keep strict "CG-or-bust". |
 
 ## Example Usage
 
@@ -81,3 +84,36 @@ REQUIREMENTS_FILE=requirements-dev.txt ./sync-chainguard-packages.sh
 - **python**: Contains rebuilt/verified packages from Chainguard
 
 The sync script checks `python-remediated` first to prefer remediated versions when available.
+
+## Sync host environment matters
+
+`pip download` selects wheels that match the **sync host's** Python version and
+platform. If your sync host is macOS Python 3.14 but consumers run Linux
+Python 3.11 containers, the cached wheels in CodeArtifact will be
+macOS/3.14-specific — and consumers will fall back to sdist or upstream.
+
+To produce deployment-ready wheels regardless of sync host, set:
+
+```bash
+export TARGET_PYTHON_VERSION=3.11
+export TARGET_PLATFORM=manylinux2014_x86_64
+./sync-chainguard-packages.sh
+```
+
+Packages with no matching wheel (e.g. pure-Python libs that only ship sdists)
+fall back to unconstrained download automatically.
+
+## Two-phase origin control pattern
+
+The sync runs origin controls in two phases:
+
+1. **During upload**: sets `publish=ALLOW, upstream=BLOCK` per package.
+   This prevents CodeArtifact's pre-publish metadata GET from triggering its
+   upstream proxy, which would cache the public-PyPI version and reject our
+   Chainguard-built version with a 409 conflict.
+2. **After upload**: flips synced packages to `publish=ALLOW, upstream=ALLOW`
+   so versions Chainguard didn't build fall through to public PyPI
+   transparently.
+
+Set `POST_SYNC_ALLOW_UPSTREAM=0` to skip phase 2 and keep strict enforcement
+(any version not in the Chainguard sync will fail to install).

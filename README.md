@@ -127,12 +127,32 @@ This ensures you get remediated versions when available.
 │   ├── setup-codeartifact.sh
 │   ├── sync-chainguard-packages.sh
 │   └── cleanup-codeartifact.sh
-└── java/
+├── java/
+│   ├── README.md
+│   ├── setup-codeartifact.sh
+│   ├── sync-chainguard-packages.sh
+│   └── cleanup-codeartifact.sh
+└── tools/
     ├── README.md
-    ├── setup-codeartifact.sh
-    ├── sync-chainguard-packages.sh
-    └── cleanup-codeartifact.sh
+    ├── update-codeartifact-origins.sh        # bulk origin-control updates
+    ├── delete-empty-codeartifact-packages.sh # clean up ghost packages
+    └── tag-codeartifact.sh                   # apply AWS tags post-hoc
 ```
+
+## AWS resource tagging
+
+All `setup-codeartifact.sh` scripts accept an optional `CODEARTIFACT_TAGS`
+environment variable for applying AWS tags to the domain and repositories
+at creation time. Useful when your org requires standard tags or your
+AWS account runs cleanup jobs that spare only tagged resources.
+
+```bash
+export CODEARTIFACT_TAGS="key=project,value=my-poc key=owner,value=me@example.com key=aws-nuke-ignore,value=true"
+./python/setup-codeartifact.sh
+```
+
+To tag resources created before this feature existed, use
+`tools/tag-codeartifact.sh`.
 
 ## License
 

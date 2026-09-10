@@ -52,3 +52,12 @@ venv.bak/
 *.log
 *.tmp
 .chainctl-token
+.codeartifact-sync/
+.codeartifact-uploaded.txt
+.venv/
+.venv-pypi/
+.venv-codeartifact/
+node_modules/
+.npmrc
+python/chainguard-not-found.txt
+javascript/chainguard-not-found.txt

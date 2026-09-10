@@ -13,7 +13,13 @@ REPO_NAME="${CODEARTIFACT_REPO:-my-npm-repo}"
 LOCKFILE="${LOCKFILE:-package-lock.json}"
 WORK_DIR="${WORK_DIR:-.codeartifact-sync}"
 NOT_FOUND_FILE="${NOT_FOUND_FILE:-chainguard-not-found.txt}"
+UPLOADED_FILE="${UPLOADED_FILE:-.codeartifact-uploaded.txt}"
 DEBUG="${DEBUG:-false}"
+
+# After sync, flip synced packages from upstream=BLOCK to upstream=ALLOW so
+# versions Chainguard doesn't build fall through to public npm. Set "0" to
+# skip (keep strict "CG-or-bust" enforcement).
+POST_SYNC_ALLOW_UPSTREAM="${POST_SYNC_ALLOW_UPSTREAM:-1}"
 
 # Chainguard configuration (expects CGR_USERNAME and CGR_TOKEN env vars)
 CGR_REGISTRY="https://libraries.cgr.dev/javascript/"
@@ -109,6 +115,14 @@ echo ""
 FOUND_COUNT=0
 NOT_FOUND_COUNT=0
 FAILED_PUBLISH_COUNT=0
+# Sub-categorized publish failures
+FAILED_UPSTREAM_CLAIM_COUNT=0   # CA's 409 "exists in externally connected repo"
+FAILED_PRERELEASE_COUNT=0       # npm: prerelease needs --tag (shouldn't happen; auto-tagged)
+FAILED_PROVENANCE_COUNT=0       # npm: SLSA provenance (shouldn't happen; --provenance=false)
+FAILED_OTHER_COUNT=0
+
+# Reset uploaded-tracker file (used for phase 2 origin flip)
+: > "$UPLOADED_FILE"
 
 # Process each package
 echo "Processing packages..."
@@ -220,11 +234,24 @@ EOF
                 echo "  DEBUG: Tarball: $TARBALL"
             fi
 
+            # Detect prerelease versions (semver -alpha / -beta / -rc / -pre /
+            # -next etc). npm publish refuses to tag a prerelease as 'latest',
+            # so we explicitly set --tag pre.
+            PUBLISH_TAG_ARGS=()
+            if [[ "$PACKAGE_VERSION" == *"-"* ]]; then
+                PUBLISH_TAG_ARGS=(--tag pre)
+            fi
+
             PUBLISH_OUTPUT=$(mktemp)
             PUBLISH_EXIT_CODE=0
+            # --provenance=false: we are republishing upstream or Chainguard-built
+            #   tarballs, not building our own. npm would otherwise try to generate
+            #   SLSA provenance and fail outside CI with EUSAGE.
             npm publish "$TARBALL" \
                 --registry="$CODEARTIFACT_ENDPOINT" \
                 --userconfig "$CA_NPMRC" \
+                --provenance=false \
+                "${PUBLISH_TAG_ARGS[@]}" \
                 > "$PUBLISH_OUTPUT" 2>&1 || PUBLISH_EXIT_CODE=$?
 
             if [[ "$DEBUG" == "true" ]]; then
@@ -235,14 +262,47 @@ EOF
 
             if [[ $PUBLISH_EXIT_CODE -eq 0 ]]; then
                 echo "  Successfully published to CodeArtifact!"
-            elif grep -q "already exists\|EPUBLISHCONFLICT\|previously published versions" "$PUBLISH_OUTPUT"; then
+                if [[ "$PACKAGE_NAME" == @*/* ]]; then
+                    echo "${PKG_NAMESPACE}/${PKG_SHORT_NAME}" >> "$UPLOADED_FILE"
+                else
+                    echo "${PACKAGE_NAME}" >> "$UPLOADED_FILE"
+                fi
+            elif grep -qE "EPUBLISHCONFLICT|cannot publish over the previously published versions" "$PUBLISH_OUTPUT"; then
+                # These are npm's own idempotency signals: the exact version was
+                # already published to this registry in a prior run.
                 echo "  Package already exists in CodeArtifact (OK)"
+                if [[ "$PACKAGE_NAME" == @*/* ]]; then
+                    echo "${PKG_NAMESPACE}/${PKG_SHORT_NAME}" >> "$UPLOADED_FILE"
+                else
+                    echo "${PACKAGE_NAME}" >> "$UPLOADED_FILE"
+                fi
+            elif grep -qE "exists in externally connected repository" "$PUBLISH_OUTPUT"; then
+                # This is CA's 409 when the same version is resolvable via an
+                # upstream repo. Our publish was REJECTED; the upstream version
+                # will serve instead (i.e., the Chainguard rebuild is NOT stored).
+                # See: origin controls during sync must be upstream=BLOCK to avoid this.
+                echo "  Warning: Failed to publish — upstream already claims this version (CG rebuild NOT stored)"
+                FAILED_UPSTREAM_CLAIM_COUNT=$((FAILED_UPSTREAM_CLAIM_COUNT + 1))
+                FAILED_PUBLISH_COUNT=$((FAILED_PUBLISH_COUNT + 1))
+            elif grep -qE "must specify a tag using --tag when publishing a prerelease" "$PUBLISH_OUTPUT"; then
+                # Shouldn't happen now that we auto-tag prereleases, but catch it
+                # for clarity if something changes.
+                echo "  Warning: Failed to publish — prerelease needs --tag (script bug)"
+                FAILED_PRERELEASE_COUNT=$((FAILED_PRERELEASE_COUNT + 1))
+                FAILED_PUBLISH_COUNT=$((FAILED_PUBLISH_COUNT + 1))
+            elif grep -qE "Automatic provenance generation not supported" "$PUBLISH_OUTPUT"; then
+                # Shouldn't happen now that we pass --provenance=false, but catch
+                # it for clarity.
+                echo "  Warning: Failed to publish — provenance generation (script bug)"
+                FAILED_PROVENANCE_COUNT=$((FAILED_PROVENANCE_COUNT + 1))
+                FAILED_PUBLISH_COUNT=$((FAILED_PUBLISH_COUNT + 1))
             else
                 echo "  Warning: Failed to publish to CodeArtifact"
                 if [[ "$DEBUG" != "true" ]]; then
                     echo "  Error details:"
                     cat "$PUBLISH_OUTPUT"
                 fi
+                FAILED_OTHER_COUNT=$((FAILED_OTHER_COUNT + 1))
                 FAILED_PUBLISH_COUNT=$((FAILED_PUBLISH_COUNT + 1))
             fi
 
@@ -264,6 +324,48 @@ done <<< "$PACKAGES"
 # Clean up
 rm -rf "$WORK_DIR"
 
+# Phase 2: flip origins from BLOCK -> ALLOW so upstream fallback works for
+# versions we didn't sync. Skippable via POST_SYNC_ALLOW_UPSTREAM=0.
+flip_origins_to_allow() {
+    if [[ ! -s "$UPLOADED_FILE" ]]; then
+        echo "No uploaded packages to flip."
+        return 0
+    fi
+    local count ok=0 failed=0
+    count=$(wc -l < "$UPLOADED_FILE" | tr -d ' ')
+    echo ""
+    echo "Flipping origin controls to upstream=ALLOW for $count uploaded packages..."
+    while IFS= read -r pkg; do
+        [[ -z "$pkg" ]] && continue
+        local -a cmd=(aws codeartifact put-package-origin-configuration
+            --domain "$DOMAIN_NAME"
+            --repository "$REPO_NAME"
+            --format npm
+            --restrictions "publish=ALLOW,upstream=ALLOW"
+            --region "$AWS_REGION")
+        if [[ "$pkg" == */* ]]; then
+            cmd+=(--namespace "${pkg%%/*}" --package "${pkg##*/}")
+        else
+            cmd+=(--package "$pkg")
+        fi
+        if "${cmd[@]}" > /dev/null 2>&1; then
+            ok=$((ok + 1))
+        else
+            failed=$((failed + 1))
+            echo "  WARN: failed to flip origin for $pkg"
+        fi
+    done < "$UPLOADED_FILE"
+    echo "  Flipped: $ok, Failed: $failed"
+}
+
+if [[ "$POST_SYNC_ALLOW_UPSTREAM" == "1" ]]; then
+    flip_origins_to_allow
+else
+    echo ""
+    echo "Skipping origin flip (POST_SYNC_ALLOW_UPSTREAM=0)."
+    echo "Synced packages remain at upstream=BLOCK — upstream fallback disabled."
+fi
+
 echo ""
 echo "=========================================="
 echo "Sync Complete!"
@@ -274,6 +376,12 @@ echo "  Total packages:           $TOTAL_PACKAGES"
 echo "  Found in Chainguard:      $FOUND_COUNT"
 echo "  Not found (NPM fallback): $NOT_FOUND_COUNT"
 echo "  Failed to publish:        $FAILED_PUBLISH_COUNT"
+if [[ $FAILED_PUBLISH_COUNT -gt 0 ]]; then
+    echo "    Upstream already claims version:    $FAILED_UPSTREAM_CLAIM_COUNT"
+    echo "    Prerelease tag issue (script bug):  $FAILED_PRERELEASE_COUNT"
+    echo "    Provenance issue (script bug):      $FAILED_PROVENANCE_COUNT"
+    echo "    Other:                              $FAILED_OTHER_COUNT"
+fi
 echo ""
 echo "Packages not found in Chainguard are recorded in: $NOT_FOUND_FILE"
 echo "These packages will be pulled from public NPM via the CodeArtifact fallback."
